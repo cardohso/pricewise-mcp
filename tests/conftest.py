@@ -3,18 +3,38 @@ import socket
 
 import pytest
 
+LOOPBACK = {"127.0.0.1", "::1", "localhost", None}
+
+
+def _is_local(address) -> bool:
+    return isinstance(address, str) or address[0] in LOOPBACK  # unix socket or loopback
+
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """Any attempt to resolve a name or open a connection fails the test."""
+    """Only loopback is reachable: any other name lookup or connection fails the test."""
+    real_connect, real_connect_ex, real_lookup = (
+        socket.socket.connect,
+        socket.socket.connect_ex,
+        socket.getaddrinfo,
+    )
 
-    def refuse(*args, **kwargs):
-        raise AssertionError("network access attempted")
+    def guard(real):
+        def guarded(self, address, *args):
+            if not _is_local(address):
+                raise AssertionError(f"network access attempted: {address!r}")
+            return real(self, address, *args)
 
-    for name in ("getaddrinfo", "create_connection"):
-        monkeypatch.setattr(socket, name, refuse)
-    for name in ("connect", "connect_ex"):
-        monkeypatch.setattr(socket.socket, name, refuse)
+        return guarded
+
+    def lookup(host, *args, **kwargs):
+        if host not in LOOPBACK:
+            raise AssertionError(f"network access attempted: lookup of {host!r}")
+        return real_lookup(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket.socket, "connect", guard(real_connect))
+    monkeypatch.setattr(socket.socket, "connect_ex", guard(real_connect_ex))
+    monkeypatch.setattr(socket, "getaddrinfo", lookup)
 
 
 @pytest.fixture
