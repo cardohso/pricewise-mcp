@@ -95,24 +95,43 @@ class ValuationService:
 service = ValuationService()
 
 
+DESCRIPTION = """\
+Demo of calibrated price ranges: estimate a used car's asking price from its body category, \
+age and kilometres, with a range half of similar cars fall in (range_50) and one eight in ten \
+fall in (range_80).
+
+The model is trained on SYNTHETIC, made-up listings. Never present the result as the value of \
+a real car or use it for a purchase or sale decision: say it comes from a synthetic demo \
+market, and relay `flags`.
+
+The first call after the server starts can take up to about 20 seconds while the model is \
+fitted."""
+
+
 def register(mcp: MCPServer) -> None:
-    @mcp.tool(name="estimate_price_range", title="Estimate price range", annotations=READ_ONLY)
+    @mcp.tool(
+        name="estimate_price_range",
+        title="Estimate price range (synthetic demo)",
+        description=DESCRIPTION,
+        annotations=READ_ONLY,
+    )
     def estimate_price_range(
-        category: Annotated[Category, Field(description="Item category in the synthetic market.")],
+        category: Annotated[
+            Category,
+            Field(
+                description="Body category. Pick the closest: an SUV is 'crossover', a "
+                "small city car is 'hatchback', a station wagon ('carrinha') is 'estate', "
+                "any battery-electric car is 'electric'."
+            ),
+        ],
         age_years: Annotated[float, Field(ge=0, le=40, description="Age of the item in years.")],
         usage: Annotated[
             float,
-            Field(ge=0, le=2_000_000, description="Distance driven, in km."),
+            Field(ge=0, le=2_000_000, description="Odometer reading in km (not miles)."),
         ],
         condition: Annotated[
             Literal["good", "fair", "poor"] | None,
             Field(description="Condition, if known. Omit when unknown (many listings omit it)."),
         ] = None,
     ) -> PriceEstimate:
-        """Estimate an asking price with calibrated 50% and 80% ranges.
-
-        The model is trained on SYNTHETIC data, not a real market: treat the numbers as a demo
-        of calibrated uncertainty, never as a valuation of a real car. Always tell the user
-        this, and relay `flags`. The first call after server start may wait a few seconds
-        while the model finishes fitting."""
         return service.estimate(category, age_years, usage, condition)

@@ -107,7 +107,10 @@ def test_invalid_vehicles_are_rejected(kw):
 
 
 def test_missing_fields_are_named_in_the_error():
-    with pytest.raises(ValidationError, match=r"engine_cc and co2_g_km required.*petrol"):
+    with pytest.raises(
+        ValidationError,
+        match=r"missing engine_cc \(field P\.1\) and co2_g_km \(field V\.7\).*petrol",
+    ):
         car(date(2019, 6, 15))
 
 

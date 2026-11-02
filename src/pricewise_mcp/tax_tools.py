@@ -29,6 +29,34 @@ TaxYear = Annotated[
 ]
 
 
+ISV_DESCRIPTION = """\
+Compute ISV (Imposto sobre Veículos), Portugal's one-off registration tax, due when a used \
+passenger car from another EU/EEA state is registered in Portugal ("legalizar um carro \
+importado").
+
+Inputs come from the car's documents: first-registration date (field B), fuel, engine cc \
+(P.1) and CO2 g/km (V.7), plus the declaration date. If the user does not know engine_cc or \
+co2_g_km, ask them; do not estimate. If the CO2 test standard (NEDC/WLTP) or a diesel's \
+particle value is unknown, call anyway: the result assumes the costlier case and says so in \
+`flags`.
+
+Returns total_eur, its components and the legal sources. Always relay `flags` and \
+`disclaimer` to the user: this is an illustration, not tax advice."""
+
+IUC_DESCRIPTION = """\
+Compute one year of IUC (Imposto Único de Circulação, the "selo do carro"), Portugal's \
+yearly circulation tax, for a passenger car first registered in the EU/EEA on or after \
+1 July 2007 (category B).
+
+Same vehicle object as calculate_isv. If the user does not know engine_cc or co2_g_km, ask \
+them; do not estimate. An unknown CO2 standard is assumed from the registration year and \
+flagged. Cars first registered before 1 July 2007 return an error: tell the user this server \
+cannot compute them, and do not retry with a different date.
+
+Returns total_eur for one year at the tax_year rates. Always relay `flags` and `disclaimer` \
+to the user: this is an illustration, not tax advice."""
+
+
 def available_years(tax: str) -> list[int]:
     return sorted(int(p.stem.rsplit("_", 1)[1]) for p in _tables.TABLES_DIR.glob(f"{tax}_*.json"))
 
@@ -66,6 +94,12 @@ def isv_result(
         )
     t = _tables_for("isv", tax_year)
     b = isv(to_vehicle(vehicle), declaration_date, year=tax_year)
+    flags = list(b.flags)
+    if declaration_date.year != tax_year:
+        flags.append(
+            f"declaration_date is in {declaration_date.year} but the {tax_year} tables were "
+            f"used; {declaration_date.year} rates may differ"
+        )
     return IsvResult(
         total_eur=b.total,
         engine_component_eur=b.engine,
@@ -78,7 +112,7 @@ def isv_result(
         co2_standard_used=b.co2_standard,
         co2_standard_assumed=b.standard_kind == "estimated",
         alternative_total_eur=b.alternative_total,
-        flags=b.flags,
+        flags=flags,
         tax_year=tax_year,
         declaration_date=declaration_date,
         sources=t["sources"],
@@ -92,8 +126,9 @@ def iuc_result(vehicle: VehicleInput, tax_year: int = _tables.CURRENT_YEAR) -> I
         b = iuc(v, year=tax_year)
     except CategoryANotSupported as e:
         raise ToolError(
-            f"{e}. Cars first registered before {t['category_b_from']} are IUC category A, "
-            "which this server does not compute."
+            f"IUC category A is not supported: first registered {vehicle.first_registration}, "
+            f"before {t['category_b_from']}. This server computes category B only. Tell the "
+            "user; do not retry with a different date."
         ) from e
     assumed = vehicle.co2_standard == "unknown" and vehicle.fuel != "electric"
     flags = []
@@ -118,7 +153,12 @@ def iuc_result(vehicle: VehicleInput, tax_year: int = _tables.CURRENT_YEAR) -> I
 
 
 def register(mcp: MCPServer) -> None:
-    @mcp.tool(name="calculate_isv", title="Calculate ISV", annotations=READ_ONLY)
+    @mcp.tool(
+        name="calculate_isv",
+        title="Calculate ISV (registration tax)",
+        description=ISV_DESCRIPTION,
+        annotations=READ_ONLY,
+    )
     def calculate_isv(
         vehicle: Annotated[VehicleInput, Field(description="The car being registered.")],
         declaration_date: Annotated[
@@ -130,23 +170,16 @@ def register(mcp: MCPServer) -> None:
         ],
         tax_year: TaxYear = _tables.CURRENT_YEAR,
     ) -> IsvResult:
-        """Compute ISV, Portugal's one-off vehicle registration tax, for a used passenger car
-        imported from another EU/EEA state.
-
-        Returns the total, its engine and CO2 components, the age reduction, and `flags` listing
-        every assumption (for example an unknown NEDC/WLTP standard or missing diesel particle
-        value). Relay the flags and the disclaimer to the user. Not tax advice."""
         return isv_result(vehicle, declaration_date, tax_year)
 
-    @mcp.tool(name="calculate_iuc", title="Calculate IUC", annotations=READ_ONLY)
+    @mcp.tool(
+        name="calculate_iuc",
+        title="Calculate IUC (yearly circulation tax)",
+        description=IUC_DESCRIPTION,
+        annotations=READ_ONLY,
+    )
     def calculate_iuc(
         vehicle: Annotated[VehicleInput, Field(description="The car being taxed.")],
         tax_year: TaxYear = _tables.CURRENT_YEAR,
     ) -> IucResult:
-        """Compute one year of IUC, Portugal's yearly circulation tax, for a category B car
-        (first registered on or after 1 July 2007).
-
-        Returns the total with its components and `flags` for any assumption (for example an
-        unknown NEDC/WLTP standard). Cars registered before July 2007 are rejected with an
-        error. Relay the flags and the disclaimer to the user. Not tax advice."""
         return iuc_result(vehicle, tax_year)

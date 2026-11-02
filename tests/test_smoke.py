@@ -35,4 +35,4 @@ def test_a_domain_error_reaches_the_client_with_its_message():
 def test_a_validation_error_reaches_the_client_and_names_the_field():
     bad = {k: v for k, v in PETROL_2019.items() if k != "engine_cc"}
     r = call("calculate_iuc", {"vehicle": bad})
-    assert r.is_error and "engine_cc required when fuel is 'petrol'" in r.content[0].text
+    assert r.is_error and "missing engine_cc (field P.1)" in r.content[0].text

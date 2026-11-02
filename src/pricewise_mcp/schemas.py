@@ -90,11 +90,15 @@ class VehicleInput(BaseModel):
     @model_validator(mode="after")
     def _combustion_needs_engine_and_co2(self) -> VehicleInput:
         if self.fuel != "electric":
-            missing = [name for name in ("engine_cc", "co2_g_km") if getattr(self, name) is None]
+            missing = [
+                f"{name} (field {doc})"
+                for name, doc in (("engine_cc", "P.1"), ("co2_g_km", "V.7"))
+                if getattr(self, name) is None
+            ]
             if missing:
                 raise ValueError(
-                    f"{' and '.join(missing)} required when fuel is '{self.fuel}' "
-                    "(only electric cars may omit them)"
+                    f"missing {' and '.join(missing)}, required when fuel is '{self.fuel}' "
+                    "(only electric cars may omit them). Ask the user; do not estimate"
                 )
         return self
 

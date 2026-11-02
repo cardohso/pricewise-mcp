@@ -29,7 +29,7 @@ def test_tools_are_marked_read_only_and_closed_world(tools):
 def test_descriptions_tell_the_client_to_relay_flags_and_the_disclaimer(tools):
     for name in ("calculate_isv", "calculate_iuc"):
         d = tools[name].description
-        assert "flags" in d and "Not tax advice" in d, name
+        assert "`flags`" in d and "`disclaimer`" in d and "not tax advice" in d, name
 
 
 def test_declaration_date_is_required_for_isv(tools):
