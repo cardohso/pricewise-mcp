@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pricewise-mcp"
+version = "0.1.0"
+description = "MCP server exposing Portuguese vehicle tax (ISV/IUC) and price-range tools from pricewise-pt, with deterministic outputs."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "João Pedro Cardoso" }]
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.3,<3",
+    # Pinned to a commit: the library is not on PyPI.
+    "pricewise-pt @ git+https://github.com/cardohso/pricewise-pt@b880ec2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+pricewise-mcp = "pricewise_mcp.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
