@@ -16,7 +16,7 @@ def car(first, fuel="petrol", **kw):
     return VehicleInput(first_registration=first, fuel=fuel, **kw)
 
 
-def test_petrol_wltp():
+def test_petrol_wltp(no_file_writes):
     # (564.13 + 39.58) × 0.35 = 211.2985 -> 211.30, 65% age reduction
     r = isv_result(car(date(2019, 6, 15), engine_cc=1199, co2_g_km=125, co2_standard="wltp"), ON)
     assert (r.total_eur, r.age_reduction) == (211.30, 0.65)

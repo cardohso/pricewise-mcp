@@ -13,7 +13,7 @@ def car(first, fuel="petrol", **kw):
     return VehicleInput(first_registration=first, fuel=fuel, **kw)
 
 
-def test_petrol():
+def test_petrol(no_file_writes):
     # (31.77 + 65.15) × 1.15 = 111.458 -> 111.46
     r = iuc_result(car(date(2019, 6, 15), engine_cc=1199, co2_g_km=125, co2_standard="wltp"))
     assert r.total_eur == 111.46 and r.year_coefficient == 1.15
