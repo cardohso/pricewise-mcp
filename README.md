@@ -26,38 +26,54 @@ Real transcript of every tool: [docs/demo-transcript.md](docs/demo-transcript.md
 Needs [uv](https://docs.astral.sh/uv/). Nothing is published to PyPI; the commands install
 straight from GitHub.
 
-**Claude Code**
+**1. Install once**
 
 ```bash
-claude mcp add pricewise -- uvx --from git+https://github.com/cardohso/pricewise-mcp pricewise-mcp
+uv tool install git+https://github.com/cardohso/pricewise-mcp
+pricewise-mcp --version    # run it once now: the first launch is slow, later ones take seconds
 ```
 
-**Claude Desktop**: add to `claude_desktop_config.json` (Settings, Developer, Edit Config):
+Install once instead of launching with `uvx --from git+...`: `uvx` contacts GitHub on
+start and rebuilds the package after the repo changes, and a cold start can exceed the 30-second connect timeout
+Claude Code applies (this happened while testing). The installed command starts offline. To
+update later: `uv tool upgrade pricewise-mcp`.
+
+**2. Connect a client**
+
+*Claude Code*
+
+```bash
+claude mcp add pricewise -- pricewise-mcp
+```
+
+*Claude Desktop*: add to `claude_desktop_config.json` (Settings, Developer, Edit Config):
 
 ```json
 {
   "mcpServers": {
     "pricewise": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/cardohso/pricewise-mcp", "pricewise-mcp"]
+      "command": "pricewise-mcp"
     }
   }
 }
 ```
 
-On macOS, Claude Desktop may not find `uvx` on its PATH. If the server does not start, replace
-`"uvx"` with the output of `which uvx`.
+Claude Desktop may not find the command on its PATH. If the server does not start, put the
+full path from `which pricewise-mcp` in `"command"`.
 
-**Streamable HTTP** (remote or shared use):
+*Streamable HTTP* (remote or shared use):
 
 ```bash
-uvx --from git+https://github.com/cardohso/pricewise-mcp pricewise-mcp --transport http --port 8000
+pricewise-mcp --transport http --port 8000
 claude mcp add --transport http pricewise http://127.0.0.1:8000/mcp
 ```
 
 HTTP is stateless, answers in JSON and binds to `127.0.0.1` by default. The server has **no
 authentication**; if you bind another address it warns on stderr. Put it behind a reverse proxy
 that authenticates callers before exposing it.
+
+*No install* (slower and more fragile): replace `pricewise-mcp` in the commands above with
+`uvx --from git+https://github.com/cardohso/pricewise-mcp pricewise-mcp`.
 
 **From a clone**
 
@@ -230,10 +246,11 @@ Short version; the full text is the `pricewise://limitations` resource.
 - The price model is trained on synthetic data and its ranges are calibrated only on that data.
 - HTTP has no authentication.
 - Tested with the MCP Python SDK's client over stdio and HTTP (in CI), and by hand in Claude
-  Code (2 November 2026): `claude mcp list` showed the server connected; asked for the ISV and
-  IUC of the 2019 petrol car above, Claude called the tools twice and reported €211.30 and
-  €111.46, with the components, the 65% age reduction, the disclaimer and the sources. The
-  Claude Desktop snippet follows its documented format and has not been run.
+  Code (2 November 2026): asked for the ISV and IUC of the 2019 petrol car above and for a
+  compact's price range, Claude called the three tools and reported €211.30, €111.46 and the
+  synthetic range, with components, the disclaimer and the synthetic-data warning. That session
+  also showed the cold-start timeout described under Install. The Claude Desktop snippet follows
+  its documented format and has not been run.
 
 ## Development
 
