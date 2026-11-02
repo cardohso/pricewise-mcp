@@ -229,9 +229,11 @@ Short version; the full text is the `pricewise://limitations` resource.
 - IUC is one year at the table year's rates; category A (before July 2007) is rejected.
 - The price model is trained on synthetic data and its ranges are calibrated only on that data.
 - HTTP has no authentication.
-- Tested with the MCP Python SDK's client over stdio and HTTP (in CI) and via the `uvx`
-  install command. The Claude Desktop and Claude Code snippets follow those clients' documented
-  formats.
+- Tested with the MCP Python SDK's client over stdio and HTTP (in CI), and by hand in Claude
+  Code (2 November 2026): `claude mcp list` showed the server connected; asked for the ISV and
+  IUC of the 2019 petrol car above, Claude called the tools twice and reported €211.30 and
+  €111.46, with the components, the 65% age reduction, the disclaimer and the sources. The
+  Claude Desktop snippet follows its documented format and has not been run.
 
 ## Development
 
