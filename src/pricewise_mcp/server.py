@@ -2,7 +2,7 @@
 
 from mcp.server.mcpserver import MCPServer
 
-from pricewise_mcp import __version__, tax_tools
+from pricewise_mcp import __version__, prompts, resources, tax_tools, valuation_tools
 
 INSTRUCTIONS = (
     "Portuguese vehicle tax (ISV, IUC) and price-range estimates. Tax results are "
@@ -13,3 +13,6 @@ INSTRUCTIONS = (
 mcp = MCPServer("pricewise", instructions=INSTRUCTIONS, version=__version__)
 
 tax_tools.register(mcp)
+valuation_tools.register(mcp)
+resources.register(mcp)
+prompts.register(mcp)
