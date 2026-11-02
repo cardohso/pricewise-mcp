@@ -245,12 +245,16 @@ Short version; the full text is the `pricewise://limitations` resource.
 - IUC is one year at the table year's rates; category A (before July 2007) is rejected.
 - The price model is trained on synthetic data and its ranges are calibrated only on that data.
 - HTTP has no authentication.
-- Tested with the MCP Python SDK's client over stdio and HTTP (in CI), and by hand in Claude
-  Code (2 November 2026): asked for the ISV and IUC of the 2019 petrol car above and for a
-  compact's price range, Claude called the three tools and reported €211.30, €111.46 and the
-  synthetic range, with components, the disclaimer and the synthetic-data warning. That session
-  also showed the cold-start timeout described under Install. The Claude Desktop snippet follows
-  its documented format and has not been run.
+- Tested with the MCP Python SDK's client over stdio and HTTP (in CI), and by hand on
+  2 November 2026 in two clients, asking for the ISV and IUC of the 2019 petrol car above and
+  for a compact's price range:
+  - Claude Code (terminal): called the three tools and reported €211.30, €111.46 and the
+    synthetic range, with the disclaimer and the synthetic-data warning. That session also hit
+    the cold-start timeout described under Install.
+  - Claude Desktop chat: called the three tools and reported the same figures and the
+    synthetic-data warning, but **did not repeat the "not tax advice" disclaimer** even though
+    every tax result carries it and the tool descriptions ask the model to relay it. The
+    server returns the disclaimer; whether a client shows it is up to the model.
 
 ## Development
 
